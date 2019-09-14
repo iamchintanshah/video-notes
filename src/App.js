@@ -1,37 +1,43 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import data from "./transcript_sbv_1.json";
-
 let player;
 
 function App() {
+    // State and setters for ...
+    // Search term
     const [search, setSearch] = useState("");
+    const [filteredData, setFilteredData] = useState(data);
+    const [searchResults, setSearchResults] = useState([]);
+
     const [ctime, setCtime] = useState(0);
-    const [currentsearch, setCurrentsearch] = useState(-1);
+    const [currentsearch, setCurrentsearch] = useState(0);
+    const [totalResult, setTotalResult] = useState(0);
     const [isProtected, setProtected] = useState(false);
 
-    let filteredData = data;
-    let searchResults = [];
+    useEffect(() => {
+        if (isProtected == true) {
+            player = new window.YT.Player("player", {
+                height: "390",
+                width: "100%",
+                videoId: "sj9pf0Idamw",
+                events: {
+                    "onStateChange": onPlayerStateChange
+                }
+            });
+        }
+    }, []);
 
     useEffect(() => {
-        if (search) {
-            const index = data.findIndex(d =>
-                d.text.toLowerCase().includes(search.toLowerCase())
-            );
-            setCurrentsearch(-1);
-            if (index > -1) {
-                document.getElementById("line" + index).scrollIntoView({ block: 'start', behavior: 'smooth' });
-            }
-        }
         if (ctime > 0) {
             const i = data.findIndex(d =>
                 ctime >= convertTime(d.startTime) && ctime <= convertTime(d.endTime)
             );
             if (i > -1) {
-                document.getElementById("line" + i).scrollIntoView(true);
+                document.getElementById("line" + i).scrollIntoView({block: "center"});
             }
         }
-    }, [search, ctime]);
+    }, [ctime]);
 
     function convertTime(time) {
         const tokens = time.split(":");
@@ -69,6 +75,7 @@ function App() {
     }
 
     function handleSearch(e) {
+        //console.log(e.target.value.length);
         setSearch(e.target.value);
     }
 
@@ -77,8 +84,10 @@ function App() {
         player.pauseVideo();
         let index = (currentsearch == -1 || currentsearch == 0) ? 0 : currentsearch - 1;
         if (searchResults[index]) {
-            searchResults[index].parentNode.scrollIntoView({ block: 'start', behavior: 'smooth' });
-            setCurrentsearch(index);
+            setTimeout(function () {
+                searchResults[index].parentNode.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                setCurrentsearch(index);
+            }, 500)
         }
     }
 
@@ -87,15 +96,53 @@ function App() {
         player.pauseVideo();
         let index = (currentsearch == -1) ? 0 : currentsearch + 1;
         if (searchResults[index]) {
-            searchResults[index].parentNode.scrollIntoView({ block: 'start', behavior: 'smooth' });
-            setCurrentsearch(index);
+            setTimeout(function () {
+                searchResults[index].parentNode.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                setCurrentsearch(index);
+            }, 500)
+        }
+    }
+
+    function handleSearchForm(e) {
+        e.preventDefault();
+        if (search.length > 0) {
+            player.pauseVideo();
+            setTimeout(function () {
+                let wrapText = '<span class="highlight-word">' + search + '</span>';
+                var myRegExp = new RegExp(search.toLowerCase(), 'g');
+                var filteredDataNew = data.map(d => {
+                    return {
+                        ...d,
+                        highlight: d.text.toLowerCase().includes(search.toLowerCase()),
+                        text: d.text.toLowerCase().replace(myRegExp, wrapText)
+                    };
+                });
+                setFilteredData(filteredDataNew);
+
+                let searchResultsNew = document.getElementsByClassName('highlight-word');
+                setSearchResults(searchResultsNew);
+                setTotalResult(searchResultsNew.length);
+
+                if (search) {
+                    const index = data.findIndex(d =>
+                        d.text.toLowerCase().includes(search.toLowerCase())
+                    );
+                    if (index > -1 && searchResults.length == 0) {
+                        document.getElementById("line" + index).scrollIntoView({ block: 'start', behavior: 'smooth' });
+                    }
+                    if (searchResults.length > 0) {
+                        searchResults[0].parentNode.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                        setCurrentsearch(0);
+                    }
+                }
+            }, 300)
         }
     }
 
     function handlePasswordSubmit(e) {
         e.preventDefault();
         var password = document.getElementById('password').value;
-        if (password == 'prydan') {
+        if (password === 'prydan') {
             setProtected(true);
             setTimeout(function () {
                 player = new window.YT.Player("player", {
@@ -112,32 +159,6 @@ function App() {
             alert('Incorrect Password!');
             return;
         }
-    }
-
-    if (search) {
-        let wrapText = '<span>' + search + '</span>';
-        filteredData = data.map(d => {
-            return {
-                ...d,
-                isCurrent: (ctime >= convertTime(d.startTime) && ctime <= convertTime(d.endTime)),
-                highlight: d.text.toLowerCase().includes(search.toLowerCase()),
-                text: d.text.toLowerCase().replace(search.toLowerCase(), wrapText)
-            };
-        });
-        searchResults = document.getElementsByClassName('text--highlight');
-        
-    }
-
-    if (ctime > 0) {
-        let wrapText = '<span>' + search + '</span>';
-        filteredData = data.map(d => {
-            return {
-                ...d,
-                isCurrent: (ctime >= convertTime(d.startTime) && ctime <= convertTime(d.endTime)),
-                highlight: (search) ? d.text.toLowerCase().includes(search.toLowerCase()) : false,
-                text: (search) ? d.text.toLowerCase().replace(search.toLowerCase(), wrapText) : d.text
-            };
-        });
     }
 
     return (
@@ -168,31 +189,34 @@ function App() {
                         <div className="transcript">
                             <div className="transcript-title">
                                 <h2>
-                                    Transcript
+                                    Search transcript
                                 </h2>
                                 {
-                                    (searchResults.length > 0) ?
+                                    (totalResult > 0) ?
                                         <div className="search-results">
-                                            <p>{searchResults.length} Matches in this video</p>
+                                            <p>{totalResult} Matches in this video</p>
                                             <div className="navigation-icons">
                                                 <a href="#" onClick={handleSearchPrev}><i className="fa fa-caret-left" aria-hidden="true"></i></a>
-                                                <span>{currentsearch + 1} of {searchResults.length}</span>
+                                                <span>{currentsearch + 1} of {totalResult}</span>
                                                 <a href="#" onClick={handleSearchNext}><i className="fa fa-caret-right" aria-hidden="true"></i></a>
                                             </div>
                                         </div> : null
                                 }
                             </div>
-                            <input type="text" placeholder="Search" onChange={handleSearch} />
+                            <form className="input-search" onSubmit={handleSearchForm}>
+                                <i className="fa fa-search"></i>
+                                <input type="text" placeholder="Search" onChange={handleSearch} />
+                            </form>
                             <div id="scroller" className="scroller">
                                 {filteredData.map((d, i) => (
                                     <div
-                                        className="line"
-                                        className={d.isCurrent ? "line line--current" : "line"}
+                                        //className="line"
+                                        className={(ctime >= convertTime(d.startTime) && ctime <= convertTime(d.endTime)) ? "line line--current" : "line"}
                                         key={i}
                                         onClick={() => play(d.startTime)}
                                         id={"line" + i}
                                     >
-                                        <div className="start">{d.startTime}</div>
+                                        <div className="start">{ d.startTime.substring(3, d.startTime.indexOf('.')) }</div>
                                         <div className={d.highlight ? "text text--highlight" : "text"} dangerouslySetInnerHTML={{ __html: d.text }}></div>
                                     </div>
                                 ))}
