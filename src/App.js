@@ -1,3 +1,4 @@
+import 'bootstrap/dist/css/bootstrap.min.css';
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import data from "./transcript_sbv_1.json";
@@ -18,8 +19,8 @@ function App() {
     useEffect(() => {
         if (isProtected == true) {
             player = new window.YT.Player("player", {
-                height: "390",
-                width: "100%",
+                // height: "390",
+                // width: "100%",
                 videoId: "sj9pf0Idamw",
                 events: {
                     "onStateChange": onPlayerStateChange
@@ -34,7 +35,7 @@ function App() {
                 ctime >= convertTime(d.startTime) && ctime <= convertTime(d.endTime)
             );
             if (i > -1) {
-                document.getElementById("line" + i).scrollIntoView({block: "center"});
+                document.getElementById("line" + i).scrollIntoView({ block: "center" });
             }
         }
     }, [ctime]);
@@ -146,8 +147,8 @@ function App() {
             setProtected(true);
             setTimeout(function () {
                 player = new window.YT.Player("player", {
-                    height: "390",
-                    width: "100%",
+                    // height: "390",
+                    // width: "100%",
                     videoId: "sj9pf0Idamw",
                     events: {
                         "onStateChange": onPlayerStateChange
@@ -166,14 +167,14 @@ function App() {
             {
                 (isProtected === false) ?
                     <div className="authentication-container">
-                        <div className="modal">
+                        <div className="password_window">
                             <h1>Private Video</h1>
                             <p>
                                 This is private video. Do you have permission to watch it? If so please provide the correct password.
                             </p>
-                            <form onSubmit={handlePasswordSubmit} className="form-input">
-                                <input id="password" type="password" name="password" />
-                                <button type="submit" className="btn">Access</button>
+                            <form onSubmit={handlePasswordSubmit} className="form-group">
+                                <input id="password" type="password" name="password" className="form-control" />
+                                <button type="submit" className="btn btn-primary">Access</button>
                             </form>
                         </div>
                     </div>
@@ -184,7 +185,9 @@ function App() {
                     <div>
                         <div className="player">
                             <h1>Youtube Demo</h1>
-                            <div id="player" />
+                            <div className="embed-responsive embed-responsive-16by9">
+                                <div id="player" className="embed-responsive-item" />
+                            </div>
                         </div>
                         <div className="transcript">
                             <div className="transcript-title">
@@ -216,7 +219,7 @@ function App() {
                                         onClick={() => play(d.startTime)}
                                         id={"line" + i}
                                     >
-                                        <div className="start">{ d.startTime.substring(3, d.startTime.indexOf('.')) }</div>
+                                        <div className="start">{d.startTime.substring(3, d.startTime.indexOf('.'))}</div>
                                         <div className={d.highlight ? "text text--highlight" : "text"} dangerouslySetInnerHTML={{ __html: d.text }}></div>
                                     </div>
                                 ))}
